@@ -1,25 +1,59 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GitHub Explorer</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
     <h1>GitHub Explorer</h1>
 
     <div class="search">
-        <input type="text" id="username" placeholder="Digite um usuário do GitHub">
-        <button id="searchBtn">Buscar</button>
+      <input
+        type="text"
+        id="username"
+        placeholder="Digite um usuário do GitHub"
+      />
+      <button id="searchBtn">Buscar</button>
     </div>
+
+    <p id="status" class="status"></p>
 
     <div id="profile"></div>
 
-    <h2>Repositórios</h2>
-    <div id="repos"></div>
+    <div id="reposSection" class="hidden">
+      <h2>Repositórios</h2>
+      <div id="repos"></div>
+    </div>
+
+    <div class="painel">
+      <div class="coluna">
+        <div class="coluna-titulo">
+          <h2>⭐ Favoritos</h2>
+        </div>
+        <div id="favoritos"></div>
+      </div>
+
+      <div class="coluna">
+        <div class="coluna-titulo">
+          <h2>🕘 Histórico</h2>
+          <button id="limparHistoricoBtn" class="btn-link">Limpar tudo</button>
+        </div>
+        <div id="historico"></div>
+      </div>
+      <div id="historico"></div>
+    </div>                              
+
+    <div class="coluna">
+        <div class="coluna-titulo">
+            <h2>👤 Usuários favoritos</h2>
+        </div>
+        <div id="usuariosFavoritos"></div>
+    </div>
+</div>                                  
+    </div>
 
     <script src="script.js"></script>
-
-</body>
+  </body>
 </html>
