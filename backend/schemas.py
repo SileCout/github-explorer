@@ -1,7 +1,49 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+# ---------- Autenticacao ----------
+
+
+class UsuarioCreate(BaseModel):
+    nome: str = Field(min_length=2, max_length=120)
+    email: str = Field(min_length=5, max_length=255)
+    senha: str = Field(min_length=12, max_length=128)
+
+    @field_validator("email")
+    @classmethod
+    def normalizar_email(cls, valor: str) -> str:
+        email = valor.strip().lower()
+        if "@" not in email or email.startswith("@") or email.endswith("@"):
+            raise ValueError("Email invalido")
+        return email
+
+
+class UsuarioOut(BaseModel):
+    id: int
+    nome: str
+    email: str
+    criado_em: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LoginCreate(BaseModel):
+    email: str
+    senha: str
+
+    @field_validator("email")
+    @classmethod
+    def normalizar_email(cls, valor: str) -> str:
+        return valor.strip().lower()
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    usuario: UsuarioOut
 
 
 # ---------- Buscas ----------
