@@ -2,11 +2,15 @@
 const API_URL =
     location.hostname === "localhost" || location.hostname === "127.0.0.1"
         ? "http://localhost:8000"
-        : "https://github-explorer-api.onrender.com";
+        : "https://github-explorer-api-silecout-epfcaab9chf4b9cb.brazilsouth-01.azurewebsites.net";
 
 const button = document.getElementById("searchBtn");
 const input = document.getElementById("username");
 const statusEl = document.getElementById("status");
+const authStatusEl = document.getElementById("authStatus");
+const cadastroStatusEl = document.getElementById("cadastroStatus");
+const cadastroBtn = document.getElementById("cadastroBtn");
+let token = sessionStorage.getItem("githubExplorerToken");
 
 button.addEventListener("click", buscarUsuario);
 
@@ -18,6 +22,11 @@ input.addEventListener("keydown", (e) => {
 document
     .getElementById("limparHistoricoBtn")
     .addEventListener("click", limparHistorico);
+document.getElementById("loginForm").addEventListener("submit", fazerLogin);
+document
+    .getElementById("cadastroForm")
+    .addEventListener("submit", fazerCadastro);
+document.getElementById("logoutBtn").addEventListener("click", () => sair());
 
 // Guarda os repositorios da ultima busca em memoria, para redesenhar
 // os cards quando um favorito e adicionado ou removido.
@@ -27,10 +36,143 @@ let favoritosPorRepo = {};
 // Mapa login -> id do usuario favorito no banco.
 let usuariosPorLogin = {};
 
-// Carrega favoritos e historico assim que a pagina abre.
-carregarFavoritos();
-carregarHistorico();
-carregarUsuariosFavoritos();
+iniciarSessao();
+
+async function apiFetch(caminho, opcoes = {}) {
+    const headers = new Headers(opcoes.headers || {});
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+
+    const resposta = await fetch(`${API_URL}${caminho}`, {
+        ...opcoes,
+        headers,
+    });
+    if (resposta.status === 401 && token) {
+        sair("Sua sessão expirou. Entre novamente.");
+    }
+    return resposta;
+}
+
+function mostrarAuthStatus(texto, tipo = "") {
+    authStatusEl.textContent = texto;
+    authStatusEl.className = "status " + tipo;
+}
+
+async function iniciarSessao() {
+    if (!token) {
+        atualizarTelaSessao(null);
+        return;
+    }
+    try {
+        const resposta = await apiFetch("/auth/me");
+        if (!resposta.ok) return;
+        atualizarTelaSessao(await resposta.json());
+        await carregarDadosPrivados();
+    } catch (error) {
+        sair("Não foi possível validar a sessão.");
+    }
+}
+
+async function fazerCadastro(evento) {
+    evento.preventDefault();
+    cadastroStatusEl.textContent = "Cadastrando, aguarde...";
+    cadastroStatusEl.className = "form-status carregando";
+    cadastroBtn.disabled = true;
+    cadastroBtn.textContent = "Cadastrando...";
+
+    const corpo = {
+        nome: document.getElementById("cadastroNome").value,
+        email: document.getElementById("cadastroEmail").value,
+        senha: document.getElementById("cadastroSenha").value,
+    };
+    try {
+        const resposta = await apiFetch("/auth/cadastro", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(corpo),
+        });
+        if (!resposta.ok) {
+            let mensagem = "Não foi possível criar a conta. Tente novamente.";
+            if (resposta.status === 409) {
+                mensagem = "Este e-mail já está cadastrado.";
+            } else if (resposta.status === 422) {
+                mensagem = "Confira o nome, o e-mail e a senha de no mínimo 12 caracteres.";
+            } else if (resposta.status >= 500) {
+                mensagem = "O servidor não conseguiu concluir o cadastro. Tente novamente em instantes.";
+            }
+            cadastroStatusEl.textContent = mensagem;
+            cadastroStatusEl.className = "form-status erro";
+            return;
+        }
+        cadastroStatusEl.textContent =
+            "✓ Cadastro realizado com sucesso! Agora entre com seu e-mail e senha.";
+        cadastroStatusEl.className = "form-status ok";
+        document.getElementById("loginEmail").value = corpo.email;
+        document.getElementById("cadastroForm").reset();
+    } catch (error) {
+        cadastroStatusEl.textContent =
+            "Não foi possível conectar ao servidor. Verifique a conexão e tente novamente.";
+        cadastroStatusEl.className = "form-status erro";
+    } finally {
+        cadastroBtn.disabled = false;
+        cadastroBtn.textContent = "Cadastrar";
+    }
+}
+
+async function fazerLogin(evento) {
+    evento.preventDefault();
+    const corpo = {
+        email: document.getElementById("loginEmail").value,
+        senha: document.getElementById("loginSenha").value,
+    };
+    try {
+        const resposta = await apiFetch("/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(corpo),
+        });
+        if (!resposta.ok) {
+            mostrarAuthStatus("E-mail ou senha inválidos.", "erro");
+            return;
+        }
+        const dados = await resposta.json();
+        token = dados.access_token;
+        sessionStorage.setItem("githubExplorerToken", token);
+        atualizarTelaSessao(dados.usuario);
+        mostrarAuthStatus("");
+        document.getElementById("loginForm").reset();
+        await carregarDadosPrivados();
+    } catch (error) {
+        mostrarAuthStatus("Erro de conexão ao entrar.", "erro");
+    }
+}
+
+function atualizarTelaSessao(usuario) {
+    document.getElementById("authForms").classList.toggle("hidden", !!usuario);
+    document.getElementById("sessao").classList.toggle("hidden", !usuario);
+    document.getElementById("conteudoPrivado").classList.toggle("hidden", !usuario);
+    document.getElementById("sessaoUsuario").textContent = usuario
+        ? `Olá, ${usuario.nome}`
+        : "";
+}
+
+async function carregarDadosPrivados() {
+    await Promise.all([
+        carregarFavoritos(),
+        carregarHistorico(),
+        carregarUsuariosFavoritos(),
+    ]);
+}
+
+function sair(mensagem = "") {
+    token = null;
+    sessionStorage.removeItem("githubExplorerToken");
+    favoritosPorRepo = {};
+    usuariosPorLogin = {};
+    document.getElementById("loginForm").reset();
+    document.getElementById("cadastroForm").reset();
+    atualizarTelaSessao(null);
+    mostrarAuthStatus(mensagem);
+}
 
 function mostrarStatus(texto, tipo = "") {
     statusEl.textContent = texto;
@@ -164,7 +306,7 @@ function mostrarRepos() {
 
 async function carregarFavoritos() {
     try {
-        const resp = await fetch(`${API_URL}/favoritos`);
+        const resp = await apiFetch("/favoritos");
         const favoritos = await resp.json();
 
         favoritosPorRepo = {};
@@ -238,7 +380,7 @@ async function adicionarFavorito(repoId) {
     };
 
     try {
-        const resp = await fetch(`${API_URL}/favoritos`, {
+        const resp = await apiFetch("/favoritos", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(corpo),
@@ -257,7 +399,7 @@ async function adicionarFavorito(repoId) {
 
 async function salvarNota(favId, nota) {
     try {
-        await fetch(`${API_URL}/favoritos/${favId}`, {
+        await apiFetch(`/favoritos/${favId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ nota }),
@@ -270,7 +412,7 @@ async function salvarNota(favId, nota) {
 
 async function removerFavorito(favId) {
     try {
-        await fetch(`${API_URL}/favoritos/${favId}`, { method: "DELETE" });
+        await apiFetch(`/favoritos/${favId}`, { method: "DELETE" });
         await carregarFavoritos();
     } catch (error) {
         console.log("Erro ao remover favorito:", error);
@@ -281,7 +423,7 @@ async function removerFavorito(favId) {
 
 async function salvarBusca(username, avatarUrl) {
     try {
-        await fetch(`${API_URL}/buscas`, {
+        await apiFetch("/buscas", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, avatar_url: avatarUrl }),
@@ -294,7 +436,7 @@ async function salvarBusca(username, avatarUrl) {
 
 async function carregarHistorico() {
     try {
-        const resp = await fetch(`${API_URL}/buscas`);
+        const resp = await apiFetch("/buscas");
         const buscas = await resp.json();
         mostrarHistorico(buscas);
     } catch (error) {
@@ -344,7 +486,7 @@ function mostrarHistorico(buscas) {
 
 async function removerBusca(buscaId) {
     try {
-        await fetch(`${API_URL}/buscas/${buscaId}`, { method: "DELETE" });
+        await apiFetch(`/buscas/${buscaId}`, { method: "DELETE" });
         carregarHistorico();
     } catch (error) {
         console.log("Erro ao remover busca:", error);
@@ -353,7 +495,7 @@ async function removerBusca(buscaId) {
 
 async function limparHistorico() {
     try {
-        await fetch(`${API_URL}/buscas`, { method: "DELETE" });
+        await apiFetch("/buscas", { method: "DELETE" });
         carregarHistorico();
     } catch (error) {
         console.log("Erro ao limpar histórico:", error);
@@ -363,7 +505,7 @@ async function limparHistorico() {
 
 async function carregarUsuariosFavoritos() {
     try {
-        const resp = await fetch(`${API_URL}/usuarios-favoritos`);
+        const resp = await apiFetch("/usuarios-favoritos");
         const usuarios = await resp.json();
 
         usuariosPorLogin = {};
@@ -441,7 +583,7 @@ async function adicionarUsuarioFavorito(user) {
     };
 
     try {
-        const resp = await fetch(`${API_URL}/usuarios-favoritos`, {
+        const resp = await apiFetch("/usuarios-favoritos", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(corpo),
@@ -463,7 +605,7 @@ async function adicionarUsuarioFavorito(user) {
 
 async function salvarNotaUsuario(usuarioId, nota) {
     try {
-        await fetch(`${API_URL}/usuarios-favoritos/${usuarioId}`, {
+        await apiFetch(`/usuarios-favoritos/${usuarioId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ nota }),
@@ -476,7 +618,7 @@ async function salvarNotaUsuario(usuarioId, nota) {
 
 async function removerUsuarioFavorito(usuarioId) {
     try {
-        await fetch(`${API_URL}/usuarios-favoritos/${usuarioId}`, {
+        await apiFetch(`/usuarios-favoritos/${usuarioId}`, {
             method: "DELETE",
         });
         await carregarUsuariosFavoritos();

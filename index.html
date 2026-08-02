@@ -9,50 +9,65 @@
   <body>
     <h1>GitHub Explorer</h1>
 
-    <div class="search">
-      <input
-        type="text"
-        id="username"
-        placeholder="Digite um usuário do GitHub"
-      />
-      <button id="searchBtn">Buscar</button>
-    </div>
+    <section id="authSection" class="auth-card">
+      <div id="authForms" class="auth-forms">
+        <form id="loginForm" autocomplete="on">
+          <h2>Entrar</h2>
+          <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="username" required />
+          <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" required />
+          <button type="submit">Entrar</button>
+        </form>
 
-    <p id="status" class="status"></p>
+        <form id="cadastroForm" autocomplete="off">
+          <h2>Criar conta</h2>
+          <input type="text" id="cadastroNome" name="new-name" placeholder="Nome" autocomplete="name" minlength="2" required />
+          <input type="email" id="cadastroEmail" name="new-email" placeholder="E-mail" autocomplete="off" required />
+          <input type="password" id="cadastroSenha" name="new-password" placeholder="Senha (mínimo de 12 caracteres)" autocomplete="new-password" minlength="12" required />
+          <button id="cadastroBtn" type="submit">Cadastrar</button>
+          <p id="cadastroStatus" class="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+      <div id="sessao" class="hidden">
+        <span id="sessaoUsuario"></span>
+        <button id="logoutBtn" type="button" class="btn-link">Sair</button>
+      </div>
+      <p id="authStatus" class="status"></p>
+    </section>
 
-    <div id="profile"></div>
-
-    <div id="reposSection" class="hidden">
-      <h2>Repositórios</h2>
-      <div id="repos"></div>
-    </div>
-
-    <div class="painel">
-      <div class="coluna">
-        <div class="coluna-titulo">
-          <h2>⭐ Favoritos</h2>
-        </div>
-        <div id="favoritos"></div>
+    <main id="conteudoPrivado" class="hidden">
+      <div class="search">
+        <input type="text" id="username" placeholder="Digite um usuário do GitHub" />
+        <button id="searchBtn">Buscar</button>
       </div>
 
-      <div class="coluna">
-        <div class="coluna-titulo">
-          <h2>🕘 Histórico</h2>
-          <button id="limparHistoricoBtn" class="btn-link">Limpar tudo</button>
-        </div>
-        <div id="historico"></div>
-      </div>
-      <div id="historico"></div>
-    </div>                              
+      <p id="status" class="status"></p>
+      <div id="profile"></div>
 
-    <div class="coluna">
-        <div class="coluna-titulo">
-            <h2>👤 Usuários favoritos</h2>
+      <div id="reposSection" class="hidden">
+        <h2>Repositórios</h2>
+        <div id="repos"></div>
+      </div>
+
+      <div class="painel">
+        <div class="coluna">
+          <div class="coluna-titulo"><h2>⭐ Favoritos</h2></div>
+          <div id="favoritos"></div>
         </div>
+
+        <div class="coluna">
+          <div class="coluna-titulo">
+            <h2>🕘 Histórico</h2>
+            <button id="limparHistoricoBtn" class="btn-link">Limpar tudo</button>
+          </div>
+          <div id="historico"></div>
+        </div>
+      </div>
+
+      <div class="coluna usuarios-favoritos-coluna">
+        <div class="coluna-titulo"><h2>👤 Usuários favoritos</h2></div>
         <div id="usuariosFavoritos"></div>
-    </div>
-</div>                                  
-    </div>
+      </div>
+    </main>
 
     <script src="script.js"></script>
   </body>

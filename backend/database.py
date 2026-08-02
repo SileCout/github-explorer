@@ -6,10 +6,12 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:silebills2026@localhost:5432/github_explorer",
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError(
+        "A variavel de ambiente DATABASE_URL precisa estar definida."
+    )
 
 # O Render entrega a URL comecando com "postgres://", mas o SQLAlchemy
 # exige "postgresql://". Essa troca evita erro no deploy.
