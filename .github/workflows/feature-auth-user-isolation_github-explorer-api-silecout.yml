@@ -7,7 +7,7 @@ name: Build and deploy Python app to Azure Web App - github-explorer-api-silecou
 on:
   push:
     branches:
-      - feature/auth-user-isolation
+      - main
   workflow_dispatch:
 
 jobs:
