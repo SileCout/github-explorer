@@ -2,7 +2,7 @@
 const API_URL =
     location.hostname === "localhost" || location.hostname === "127.0.0.1"
         ? "http://localhost:8000"
-        : "https://github-explorer-api.onrender.com";
+        : "https://github-explorer-api-silecout-epfcaab9chf4b9cb.brazilsouth-01.azurewebsites.net";
 
 const button = document.getElementById("searchBtn");
 const input = document.getElementById("username");
